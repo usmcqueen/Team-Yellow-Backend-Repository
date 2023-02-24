@@ -1,0 +1,124 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>My Movie List</title>
+  </head>
+  <body>
+    <h1>My Movie List</h1>
+
+    <form id="add-movie-form">
+      <input type="text" id="title-input" placeholder="Title">
+      <input type="text" id="mpaa-input" placeholder="MPAA Rating">
+      <input type="text" id="genre-input" placeholder="Genre">
+      <input type="text" id="image-input" placeholder="Image URL">
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="movie-list"></div>
+
+    <template id="movie-item-template">
+      <div class="movie-item">
+        <img src="" width="150" height="275">
+        <div>
+          <h2></h2>
+          <p><span class="property">MPAA Rating:</span> <span class="mpaa"></span></p>
+          <p><span class="property">Genre:</span> <span class="genre"></span></p>
+          <button class="edit-button">Edit</button>
+          <button class="delete-button">Delete</button>
+        </div>
+      </div>
+    </template>
+  </body>
+  <script>
+// Get references to the relevant elements in the DOM
+const addMovieForm = document.querySelector('#add-movie-form');
+const movieList = document.querySelector('#movie-list');
+const movieItemTemplate = document.querySelector('#movie-item-template');
+
+// Define a variable to keep track of the current movie being edited (if any)
+let currentMovie = null;
+
+// Function to create a new movie item element from the template
+function createMovieItemElement(movieData) {
+  // Clone the template element
+  const movieItemElement = movieItemTemplate.content.cloneNode(true);
+
+  // Set the values of the various elements in the movie item
+  const imageElement = movieItemElement.querySelector('img');
+  imageElement.setAttribute('src', movieData.image);
+  const titleElement = movieItemElement.querySelector('h2');
+  titleElement.textContent = movieData.title;
+  const mpaaElement = movieItemElement.querySelector('.mpaa');
+  mpaaElement.textContent = movieData.mpaa;
+  const genreElement = movieItemElement.querySelector('.genre');
+  genreElement.textContent = movieData.genre;
+
+  // Add event listeners for the edit and delete buttons
+  const editButton = movieItemElement.querySelector('.edit-button');
+  editButton.addEventListener('click', () => {
+    currentMovie = movieData;
+    document.querySelector('#title-input').value = currentMovie.title;
+    document.querySelector('#mpaa-input').value = currentMovie.mpaa;
+    document.querySelector('#genre-input').value = currentMovie.genre;
+    document.querySelector('#image-input').value = currentMovie.image;
+  });
+  const deleteButton = movieItemElement.querySelector('.delete-button');
+  deleteButton.addEventListener('click', async () => {
+    // Send a DELETE request to the API
+    const response = await fetch(`https://example.com/api/movies/${movieData.id}`, {
+      method: 'DELETE'
+    });
+    if (response.ok) {
+      movieItemElement.remove();
+    } else {
+      alert('Failed to delete movie.');
+    }
+  });
+
+  return movieItemElement;
+}
+
+// Function to add a new movie to the list
+async function addMovie(title, mpaa, genre, image) {
+  const movieData = { title, mpaa, genre, image };
+  const response = await fetch('https://example.com/api/movies', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(movieData)
+  });
+  if (response.ok) {
+    const newMovieData = await response.json();
+    newMovieData.id = newMovieData._id;
+    const movieItemElement = createMovieItemElement(newMovieData);
+    movieList.appendChild(movieItemElement);
+  } else {
+    alert('Failed to add movie.');
+  }
+}
+
+// Function to update an existing movie in the list
+async function updateMovie(movieData) {
+  const response = await fetch(`https://example.com/api/movies/${movieData.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(movieData)
+  });
+  if (response.ok) {
+    movieList.innerHTML = '';
+    movieList.append(...Array.from(movieList.children).sort((a, b) => {
+      const titleA = a.querySelector('h2').textContent.toUpperCase();
+      const titleB = b.querySelector('h2').textContent.toUpperCase();
+      if (titleA < titleB) {
+        return -1;
+      }
+      if (titleA > titleB) {
+        return 1;
+      }
+      return 0;
+    }));
+ 
+</script>
